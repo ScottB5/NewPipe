@@ -20,6 +20,7 @@ import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
+
 import org.schabi.newpipe.ActivityCommunicator;
 import org.schabi.newpipe.BuildConfig;
 import org.schabi.newpipe.R;
@@ -81,6 +82,29 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        
+
+
+         /*CHANGED by Scottyb */
+        /*WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        LayoutInflater mInflater = (LayoutInflater)
+                getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        View mView = mInflater.inflate(R.layout.player_notification, null);
+
+
+
+        WindowManager.LayoutParams mLayoutParams = new WindowManager.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0,
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+                PixelFormat.RGBA_8888);*/
+        /* END CHANGES */
+
+
         Toast.makeText(this, R.string.background_player_playing_toast,
                 Toast.LENGTH_SHORT).show();
 
@@ -302,6 +326,8 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                             noteID, openDetailViewIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT))
                     .setContentIntent(openDetailView);
+
+
 
 
             RemoteViews view =
