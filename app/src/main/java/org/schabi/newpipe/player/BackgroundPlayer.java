@@ -5,25 +5,36 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 
 
 import org.schabi.newpipe.ActivityCommunicator;
 import org.schabi.newpipe.BuildConfig;
 import org.schabi.newpipe.R;
+import org.schabi.newpipe.RemoteReceiver;
 import org.schabi.newpipe.VideoItemDetailActivity;
 import org.schabi.newpipe.VideoItemDetailFragment;
 
@@ -82,7 +93,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        
+
 
 
          /*CHANGED by Scottyb */
@@ -148,6 +159,8 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         private Bitmap videoThumbnail = null;
         private NotificationCompat.Builder noteBuilder;
         private Notification note;
+        private MediaSessionCompat mediaSession;
+        private ComponentName receiver;
 
         public PlayerThread(String src, String title, BackgroundPlayer owner) {
             this.source = src;
@@ -155,6 +168,36 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             this.owner = owner;
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+            /* Created by Scotty B */
+            receiver = new ComponentName(getPackageName(), RemoteReceiver.class.getName());
+            mediaSession = new MediaSessionCompat(owner, "PlayerService", receiver, null);
+            mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+                    MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE)
+                    .build());
+            mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Test Artist")
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Test Album")
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Test Track Name")
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000)
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                            BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                    .build());
+
+            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+                @Override
+                public void onAudioFocusChange(int focusChange) {
+                    // Ignore
+                }
+            }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+            mediaSession.setActive(true);
+            Log.i(TAG, "Media Session Activated");
+            /*END CHANGES */
+
         }
 
         @Override
@@ -231,6 +274,25 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
+
+
+
+            /* Created by Scotty B*/
+                if (mediaSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+                    mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0.0f)
+                            .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+                } else {
+                    mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                            .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+                }
+                //return super.onStartCommand(intent, flags, startId);
+            /* END CHANGES */
+
+
+
+
                 //Log.i(TAG, "received broadcast action:"+action);
                 if(action.equals(ACTION_PLAYPAUSE)) {
                     if(mediaPlayer.isPlaying()) {
