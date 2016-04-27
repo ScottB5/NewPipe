@@ -80,6 +80,9 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
     // Determines if the service is already running.
     // Prevents launching the service twice.
     public static volatile boolean isRunning = false;
+    private MediaSessionCompat mediaSession;
+
+
 
     public BackgroundPlayer() {
         super();
@@ -90,6 +93,35 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         /*PendingIntent pi = PendingIntent.getActivity(this, 0,
                 new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);*/
         super.onCreate();
+        /* Created by Scotty B */
+        ComponentName receiver = new ComponentName(getPackageName(), RemoteReceiver.class.getName());
+        mediaSession = new MediaSessionCompat(this, "PlayerService", receiver, null);
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0)
+                .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE)
+                .build());
+        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Test Artist")
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Test Album")
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Test Track Name")
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000)
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                        BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                .build());
+
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+            @Override
+            public void onAudioFocusChange(int focusChange) {
+                // Ignore
+            }
+        }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        mediaSession.setActive(true);
+        Log.i(TAG, "Media Session Activated");
+            /*END CHANGES */
+
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -115,6 +147,18 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                 PixelFormat.RGBA_8888);*/
         /* END CHANGES */
 
+           /* Created by Scotty B*/
+        if (mediaSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0.0f)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+        } else {
+            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+        }
+
+            /* END CHANGES */
 
         Toast.makeText(this, R.string.background_player_playing_toast,
                 Toast.LENGTH_SHORT).show();
@@ -131,9 +175,9 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         player.start();
 
         isRunning = true;
-
+        return super.onStartCommand(intent, flags, startId);
         // If we get killed after returning here, don't restart
-        return START_NOT_STICKY;
+        //return START_NOT_STICKY;
     }
 
     @Override
@@ -159,8 +203,6 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         private Bitmap videoThumbnail = null;
         private NotificationCompat.Builder noteBuilder;
         private Notification note;
-        private MediaSessionCompat mediaSession;
-        private ComponentName receiver;
 
         public PlayerThread(String src, String title, BackgroundPlayer owner) {
             this.source = src;
@@ -169,34 +211,6 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
-            /* Created by Scotty B */
-            receiver = new ComponentName(getPackageName(), RemoteReceiver.class.getName());
-            mediaSession = new MediaSessionCompat(owner, "PlayerService", receiver, null);
-            mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                    MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                    .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0)
-                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE)
-                    .build());
-            mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Test Artist")
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Test Album")
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Test Track Name")
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000)
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
-                            BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
-                    .build());
-
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
-                @Override
-                public void onAudioFocusChange(int focusChange) {
-                    // Ignore
-                }
-            }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-            mediaSession.setActive(true);
-            Log.i(TAG, "Media Session Activated");
-            /*END CHANGES */
 
         }
 
@@ -277,18 +291,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
 
 
 
-            /* Created by Scotty B*/
-                if (mediaSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
-                    mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                            .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0.0f)
-                            .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-                } else {
-                    mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                            .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
-                            .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-                }
-                //return super.onStartCommand(intent, flags, startId);
-            /* END CHANGES */
+
 
 
 
@@ -388,12 +391,11 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                     .setContentIntent(PendingIntent.getActivity(getApplicationContext(),
                             noteID, openDetailViewIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT))
-                    .setContentIntent(openDetailView)
-                    /*Added by Scottyb*/
+                    .setContentIntent(openDetailView);
+                    /*Added by Scottyb/
                     .setStyle(new NotificationCompat.MediaStyle()
                             .setShowActionsInCompactView(0)
-                            .setMediaSession(mediaSession.getSessionToken()))
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                            .setMediaSession(mediaSession.getSessionToken()));
                     /*END ADD*/
 
 
