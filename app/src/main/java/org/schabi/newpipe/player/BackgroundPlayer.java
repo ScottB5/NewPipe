@@ -331,6 +331,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             unregisterReceiver(broadcastReceiver);
             //release mediaPlayer's system resources
             mediaPlayer.release();
+            mediaSession.release();
 
             //release wifilock
             wifiLock.release();
@@ -387,8 +388,13 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                     .setContentIntent(PendingIntent.getActivity(getApplicationContext(),
                             noteID, openDetailViewIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT))
-                    .setContentIntent(openDetailView);
-
+                    .setContentIntent(openDetailView)
+                    /*Added by Scottyb*/
+                    .setStyle(new NotificationCompat.MediaStyle()
+                            .setShowActionsInCompactView(0)
+                            .setMediaSession(mediaSession.getSessionToken()))
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                    /*END ADD*/
 
 
 
