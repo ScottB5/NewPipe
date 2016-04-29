@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
@@ -76,13 +77,11 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
     private volatile String webUrl = "";
     private volatile int serviceId = -1;
     private volatile String channelName = "";
+    View mView;
 
     // Determines if the service is already running.
     // Prevents launching the service twice.
     public static volatile boolean isRunning = false;
-    private MediaSessionCompat mediaSession;
-
-
 
     public BackgroundPlayer() {
         super();
@@ -93,48 +92,16 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         /*PendingIntent pi = PendingIntent.getActivity(this, 0,
                 new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);*/
         super.onCreate();
-        /* Created by Scotty B */
-        ComponentName receiver = new ComponentName(getPackageName(), RemoteReceiver.class.getName());
-        mediaSession = new MediaSessionCompat(this, "PlayerService", receiver, null);
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0)
-                .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE)
-                .build());
-        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Test Artist")
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Test Album")
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Test Track Name")
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000)
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
-                        BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
-                .build());
-
-        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
-            @Override
-            public void onAudioFocusChange(int focusChange) {
-                // Ignore
-            }
-        }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-        mediaSession.setActive(true);
-        Log.i(TAG, "Media Session Activated");
-            /*END CHANGES */
-
-    }
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
 
 
 
-         /*CHANGED by Scottyb */
-        /*WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        /*CHANGED by Scottyb /
+        WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         LayoutInflater mInflater = (LayoutInflater)
                 getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-        View mView = mInflater.inflate(R.layout.player_notification, null);
+        mView = mInflater.inflate(R.layout.player_notification, null);
 
 
 
@@ -144,21 +111,16 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                 WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                         | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
-                PixelFormat.RGBA_8888);*/
+                PixelFormat.RGBA_8888);
+        // finally, add the view to window
+        mWindowManager.addView(mView, mLayoutParams);
         /* END CHANGES */
 
-           /* Created by Scotty B*/
-        if (mediaSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
-            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                    .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0.0f)
-                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-        } else {
-            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                    .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
-                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-        }
+    }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
 
-            /* END CHANGES */
+
 
         Toast.makeText(this, R.string.background_player_playing_toast,
                 Toast.LENGTH_SHORT).show();
@@ -175,9 +137,9 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         player.start();
 
         isRunning = true;
-        return super.onStartCommand(intent, flags, startId);
+
         // If we get killed after returning here, don't restart
-        //return START_NOT_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Override
@@ -188,6 +150,11 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
 
     @Override
     public void onDestroy() {
+
+       /* if (mView != null) {
+            WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+            wm.removeView(mView);
+        }*/
         //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
         isRunning = false;
     }
@@ -203,6 +170,8 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
         private Bitmap videoThumbnail = null;
         private NotificationCompat.Builder noteBuilder;
         private Notification note;
+        private MediaSessionCompat mediaSession;
+        private ComponentName receiver;
 
         public PlayerThread(String src, String title, BackgroundPlayer owner) {
             this.source = src;
@@ -211,6 +180,33 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
+            /* Created by Scotty B /
+            receiver = new ComponentName(getPackageName(), RemoteReceiver.class.getName());
+            mediaSession = new MediaSessionCompat(owner, "PlayerService", receiver, null);
+            mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+                    MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE)
+                    .build());
+            mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, channelName)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000)
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                            ActivityCommunicator.getCommunicator().backgroundPlayerThumbnail)
+                    .build());
+
+            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+                @Override
+                public void onAudioFocusChange(int focusChange) {
+                    // Ignore
+                }
+            }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+            mediaSession.setActive(true);
+            Log.i(TAG, "Media Session Activated");
+            /*END CHANGES */
 
         }
 
@@ -269,6 +265,32 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
             //currently decommissioned progressbar looping update code - works, but doesn't fit inside
             //Notification.MediaStyle Notification layout.
             noteMgr = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+
+
+            /*CHANGED by Scottyb /
+            WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+            LayoutInflater mInflater = (LayoutInflater)
+                    getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+            View mView = mInflater.inflate(R.layout.player_notification, null);
+
+
+
+            WindowManager.LayoutParams mLayoutParams = new WindowManager.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0,
+                    WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                            | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+                    PixelFormat.RGBA_8888);
+             /* END CHANGES */
+
+
+
+
+
             /*
             //update every 2s or 4 times in the video, whichever is shorter
             int sleepTime = Math.min(2000, (int)((double)vidLength/4));
@@ -281,6 +303,20 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                     Log.d(TAG, "sleep failure");
                 }
             }*/
+
+
+            /* Created by Scotty B/
+            if (mediaSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+                mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_PAUSED, 0, 0.0f)
+                        .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+            } else {
+                mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                        .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+            }
+            //return super.onStartCommand(intent, flags, startId);
+            /* END CHANGES */
         }
 
         /**Handles button presses from the notification. */
@@ -294,10 +330,56 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
 
 
 
-
-
                 //Log.i(TAG, "received broadcast action:"+action);
                 if(action.equals(ACTION_PLAYPAUSE)) {
+
+                    /*CHANGED by Scottyb /
+                    WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+                    LayoutInflater mInflater = (LayoutInflater)
+                            getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+                   /* View mView = mInflater.inflate(R.layout.player_notification, null);
+                    mView.setImageViewBitmap(R.id.notificationCover, videoThumbnail);
+                    mView.setTextViewText(R.id.notificationSongName, title);
+                    mView.setTextViewText(R.id.notificationArtist, channelName);
+                    mView.setOnClickPendingIntent(R.id.notificationStop, stopPI);
+                    mView.setOnClickPendingIntent(R.id.notificationPlayPause, playPI);
+                    mView.setOnClickPendingIntent(R.id.notificationContent, openDetailView);/
+                    PendingIntent playPI = PendingIntent.getBroadcast(owner, noteID,
+                            new Intent(ACTION_PLAYPAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
+                    PendingIntent stopPI = PendingIntent.getBroadcast(owner, noteID,
+                            new Intent(ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
+
+
+                    Intent openDetailViewIntent = new Intent(getApplicationContext(),
+                            VideoItemDetailActivity.class);
+                    openDetailViewIntent.putExtra(VideoItemDetailFragment.STREAMING_SERVICE, serviceId);
+                    openDetailViewIntent.putExtra(VideoItemDetailFragment.VIDEO_URL, webUrl);
+                    openDetailViewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    PendingIntent openDetailView = PendingIntent.getActivity(owner, noteID,
+                            openDetailViewIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                    RemoteViews mView =
+                            new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.player_notification);
+                    mView.setImageViewBitmap(R.id.notificationCover, videoThumbnail);
+                    mView.setTextViewText(R.id.notificationSongName, title);
+                    mView.setTextViewText(R.id.notificationArtist, channelName);
+                    mView.setOnClickPendingIntent(R.id.notificationStop, stopPI);
+                    mView.setOnClickPendingIntent(R.id.notificationPlayPause, playPI);
+                    mView.setOnClickPendingIntent(R.id.notificationContent, openDetailView);
+
+
+
+                    WindowManager.LayoutParams mLayoutParams = new WindowManager.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0,
+                            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                                    | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+                            PixelFormat.RGBA_8888);
+        /* END CHANGES */
+
                     if(mediaPlayer.isPlaying()) {
                         mediaPlayer.pause();
                         note.contentView.setImageViewResource(R.id.notificationPlayPause, R.drawable.ic_play_circle_filled_white_24dp);
@@ -394,7 +476,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                     .setContentIntent(openDetailView);
                     /*Added by Scottyb/
                     .setStyle(new NotificationCompat.MediaStyle()
-                            .setShowActionsInCompactView(0)
+                            //.setShowActionsInCompactView(0)
                             .setMediaSession(mediaSession.getSessionToken()));
                     /*END ADD*/
 

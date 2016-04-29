@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
 
     <application
         android:name=".App"
@@ -83,7 +85,8 @@
         <service
             android:name=".player.BackgroundPlayer"
             android:exported="false"
-            android:label="@string/background_player_name"/>
+            android:label="@string/background_player_name"
+            android:showOnLockScreen="true"/>
 		<activity
             android:name=".player.ExoPlayerActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
@@ -105,7 +108,8 @@
         <service
             android:name=".player.BackgroundPlayer"
             android:label="@string/background_player_name"
-            android:exported="false" />
+            android:exported="false"
+            android:showOnLockScreen="true"/>
         <activity
             android:name=".SettingsActivity"
             android:label="@string/settings_activity_title" />
