@@ -95,7 +95,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
 
 
 
-        /*CHANGED by Scottyb /
+        /*CHANGED by Scottyb */
         WindowManager mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         LayoutInflater mInflater = (LayoutInflater)
