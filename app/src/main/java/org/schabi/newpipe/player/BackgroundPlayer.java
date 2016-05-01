@@ -109,8 +109,7 @@ public class BackgroundPlayer extends Service /*implements MediaPlayer.OnPrepare
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0,
                 WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                        | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
                 PixelFormat.RGBA_8888);
         // finally, add the view to window
         mWindowManager.addView(mView, mLayoutParams);
