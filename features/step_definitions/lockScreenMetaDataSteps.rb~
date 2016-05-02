@@ -1,0 +1,11 @@
+Given (/^I click on the search button$/) do
+    ensure_app_installed
+    start_test_server_in_background
+    touch("* id:'search_button'")
+end
+
+Then (/^I press search$/) do
+    press_enter_button
+end
+
+
